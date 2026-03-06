@@ -3,11 +3,13 @@
 
 
 ;batch mode dectection
-
-(define interactive?
-  (let [(args (current-command-line-arguments))]
-    (not (or (vector-member "-b" args)
-             (vector-member "--batch" args)))))
+(define prompt?
+   (let [(args (current-command-line-arguments))]
+     (cond
+       [(= (vector-length args) 0) #t]
+       [(string=? (vector-ref args 0) "-b") #f]
+       [(string=? (vector-ref args 0) "--batch") #f]
+       [else #t])))
 
 
 
@@ -112,5 +114,38 @@
       [else (list 'error "invalid character")])))
 
 
+;quit and other stuffs
+(define (repl hist)
+  (if prompt? (display "> ") #f)
+  (let [(input (read-line))] 
+    (cond
+      [(eof-object? input) #f]
+      [(equal? input "quit") #f] 
+      [else
+       (let* [(chars (string->list input))
+              (res-pair (eval-expr chars hist))
+              (val (car res-pair))]
+         (cond
+           
 
-    
+
+           [(eq? val 'error)
+            (display "Error: ") 
+            (displayln (cadr res-pair))
+            (repl hist)]
+        
+           [(not (null? (skip-space (cadr res-pair))))
+            (displayln "Error: Invalid Expression")
+            (repl hist)]
+            
+           [else
+            (let* [(new-hist (cons val hist)) 
+                   (id (length new-hist))]
+              (display id)
+              (display ": ")
+              (displayln (real->double-flonum val)) 
+              (repl new-hist))]))])))
+
+
+(repl '())
+
